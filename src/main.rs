@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Read, Write};
 
+/// Command-line arguments `rex <REGEX> [-l | -j | -o <FILE>] [FILE]`
 #[derive(Parser, Debug)]
 struct Args {
     /// Regular expression for a pattern to extract
