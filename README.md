@@ -1,4 +1,4 @@
-# `rex`: use Regular Expressions to eXtract fields from a string
+# `rex`: use Regular Expressions to eXtract fields from strings
 
 `rex` is a simple command-line tool for extracting fields of strings using regular expressions. It relies on Rust's
 [`Regex`] crate and its syntax for (Perl-style) regular expressions. The same can be achieved by using common
