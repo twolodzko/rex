@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Read, Write};
 
-/// Command-line arguments `rex <REGEX> [-l | -j | -o <FILE>] [FILE]`
+/// Command-line arguments
 #[derive(Parser, Debug)]
 struct Args {
     /// Regular expression for a pattern to extract
@@ -22,6 +22,10 @@ struct Args {
     /// If given, write the result to a file
     #[arg(short, long, default_value = None, name = "FILE")]
     output: Option<String>,
+
+    /// Separator for the columns when using columnar format
+    #[arg(short, long, default_value = "\t", name = "STRING")]
+    separator: String,
 
     /// Input data file, if not given, the input is read from stdin
     file: Option<String>,
@@ -45,7 +49,7 @@ fn new_writer(file: &Option<String>) -> Result<Box<dyn Write>, io::Error> {
 }
 
 /// Unwrap the result or fail with an error
-macro_rules! unwrap_or_fail {
+macro_rules! unwrap {
     ( $result:expr ) => {
         match $result {
             Ok(val) => val,
@@ -59,7 +63,7 @@ macro_rules! unwrap_or_fail {
 }
 
 /// Extract capture names and name the unnamed captures
-fn capture_names(regex: &Regex) -> Vec<String> {
+fn capture_groups_names(regex: &Regex) -> Vec<String> {
     regex
         .capture_names()
         .enumerate()
@@ -70,24 +74,38 @@ fn capture_names(regex: &Regex) -> Vec<String> {
         .collect()
 }
 
-/// Convert the `Captures` to a map (name => captured string)
-fn captures_to_map<'a, 'b>(caps: &Captures<'a>, names: &'b [String]) -> HashMap<&'b str, &'a str> {
-    caps.iter()
+/// Transform the `Regex::Captures` to a string in JSON format
+fn captures_to_json(caps: &Captures, idx: usize, names: &[String], line_numbers: bool) -> String {
+    let mut fields: HashMap<&str, &str> = caps
+        .iter()
         .enumerate()
         .skip(1) // the whole regex
         .map_while(|(i, m)| Some((names[i].as_str(), m?.as_str()))) // skip empty matches
-        .collect()
+        .collect();
+    let idx_str;
+    if line_numbers {
+        idx_str = idx.to_string();
+        fields.insert("line", &idx_str);
+    }
+    json!(fields).to_string()
 }
 
-/// Convert the `Captures` to a vec of the extracted strings
-fn captures_to_vec<'a>(caps: &Captures<'a>) -> Vec<&'a str> {
-    caps.iter()
+/// Transform the `Regex::Captures` to a string in columns format
+fn captures_to_columns(caps: &Captures, idx: usize, sep: &str, line_numbers: bool) -> String {
+    let fields: Vec<&str> = caps
+        .iter()
         .skip(1) // the whole regex
         .map(|m| match m {
             Some(m) => m.as_str(),
             None => "", // empty columns for no match
         })
-        .collect()
+        .collect();
+    let columns = fields.join(sep);
+    if line_numbers {
+        format!("{}{}{}", idx, sep, columns)
+    } else {
+        columns
+    }
 }
 
 /// Create iterator over lines that enumerates them and prints the read errors to stderr
@@ -106,16 +124,40 @@ fn lines(reader: BufReader<impl Read>) -> impl Iterator<Item = (usize, String)> 
         .map(|(i, x)| (i + 1, x)) // line numbering starts at 1
 }
 
+/// Parse the escape sequences (`\t`, `\n`, `\r`, `\\`) in a string
+fn unescape(string: String) -> String {
+    let mut chars = string.chars();
+    let mut res = String::with_capacity(string.len());
+    while let Some(lhs) = chars.next() {
+        let ch = match lhs {
+            '\\' => match chars.next() {
+                Some('t') => '\t',
+                Some('n') => '\n',
+                Some('r') => '\r',
+                Some('\\') => '\\',
+                Some(rhs) => {
+                    // ignore other escape-like sequences, take them as-is
+                    res.push(lhs);
+                    rhs
+                }
+                None => lhs, // '\' as the last character in a string, take it
+            },
+            _ => lhs,
+        };
+        res.push(ch);
+    }
+    res
+}
+
 fn main() {
     // Parse the CLI arguments
     let args = Args::parse();
+    let sep = unescape(args.separator);
+    let regex = unwrap!(Regex::new(&args.regex));
 
     // Open the input and output
-    let reader = unwrap_or_fail!(new_reader(&args.file));
-    let mut writer = unwrap_or_fail!(new_writer(&args.output));
-
-    // Parse the regex
-    let regex = unwrap_or_fail!(Regex::new(&args.regex));
+    let reader = unwrap!(new_reader(&args.file));
+    let mut writer = unwrap!(new_writer(&args.output));
 
     if args.json {
         // Output in JSON format
@@ -123,30 +165,21 @@ fn main() {
         // if the name "line" is already used for a name of a capturing group, don't use it
         let line_numbers =
             args.line_numbers && !regex.capture_names().any(|name| name == Some("line"));
-        let names = capture_names(&regex);
+        let names = capture_groups_names(&regex);
 
         for (idx, line) in lines(reader) {
             if let Some(ref caps) = regex.captures(&line) {
-                let mut fields = captures_to_map(caps, &names);
-                let idx_str;
-                if line_numbers {
-                    idx_str = idx.to_string();
-                    fields.insert("line", &idx_str);
-                }
-                unwrap_or_fail!(writeln!(writer, "{}", json!(fields)));
+                let json = captures_to_json(caps, idx, &names, line_numbers);
+                unwrap!(writeln!(writer, "{}", json));
             }
         }
     } else {
         // Output in columnar format
-        let sep = "\t";
 
         for (idx, line) in lines(reader) {
             if let Some(ref caps) = regex.captures(&line) {
-                let fields = captures_to_vec(caps);
-                if args.line_numbers {
-                    unwrap_or_fail!(write!(writer, "{}{}", idx, sep));
-                }
-                unwrap_or_fail!(writeln!(writer, "{}", fields.join(sep)));
+                let columns = captures_to_columns(caps, idx, &sep, args.line_numbers);
+                unwrap!(writeln!(writer, "{}", columns));
             }
         }
     }
