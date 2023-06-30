@@ -3,7 +3,7 @@ mod serializers;
 mod utils;
 
 use clap::Parser;
-use io::{new_reader, new_writer, skip_on_error};
+use io::{new_reader, new_writer, ok_or_warn};
 use regex::Regex;
 use serializers::{ColumnsSerializer, JsonSerializer, Serializer};
 use std::io::BufRead;
@@ -61,7 +61,7 @@ fn main() {
 
     reader
         .lines()
-        .map_while(skip_on_error)
+        .map_while(ok_or_warn)
         .enumerate()
         .for_each(|(idx, ref line)| {
             if let Some(ref caps) = regex.captures(line) {

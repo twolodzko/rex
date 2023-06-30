@@ -18,9 +18,9 @@ pub fn new_writer(file: &Option<String>) -> Result<Box<dyn Write>, io::Error> {
     })
 }
 
-/// Skip lines on read errors and print the errors to stderr
+/// Convert from `Result<String, Error>` to `Option<String>` and print the `Error` to stderr
 #[inline]
-pub fn skip_on_error(line: Result<String, std::io::Error>) -> Option<String> {
+pub fn ok_or_warn(line: Result<String, std::io::Error>) -> Option<String> {
     match line {
         Ok(line) => Some(line),
         Err(err) => {
