@@ -6,21 +6,7 @@ use clap::Parser;
 use io::{lines, new_reader, new_writer};
 use regex::Regex;
 use serializers::{ColumnsSerializer, JsonSerializer, Serializer};
-use utils::{capture_groups_names, unescape};
-
-/// Unwrap the result or fail with an error
-macro_rules! unwrap {
-    ( $result:expr ) => {
-        match $result {
-            Ok(val) => val,
-            Err(err) => {
-                // print error message to stderr and exit
-                eprintln!("{}", err);
-                std::process::exit(1);
-            }
-        }
-    };
-}
+use utils::unescape;
 
 /// Command-line arguments
 #[derive(Parser, Debug)]
@@ -53,7 +39,6 @@ fn main() {
     // Parse the CLI arguments
     let args = Args::parse();
     let regex = unwrap!(Regex::new(&args.regex));
-    let has_groups = regex.captures_len() > 1;
 
     // Open the input and output
     let reader = unwrap!(new_reader(&args.file));
@@ -63,12 +48,11 @@ fn main() {
         // if the name "line" is already used for a name of a capturing group, don't use it
         let line_numbers =
             args.line_numbers && !regex.capture_names().any(|name| name == Some("line"));
-        let names = capture_groups_names(&regex);
 
-        Box::new(JsonSerializer::new(has_groups, line_numbers, names))
+        Box::new(JsonSerializer::new(&regex, line_numbers))
     } else {
         Box::new(ColumnsSerializer::new(
-            has_groups,
+            &regex,
             args.line_numbers,
             unescape(args.separator),
         ))
