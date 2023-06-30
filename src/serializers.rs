@@ -86,11 +86,12 @@ impl JsonSerializer {
     #[allow(clippy::wrong_self_convention)]
     #[inline]
     fn from_groups<'a>(&'a self, caps: &Captures<'a>) -> HashMap<&'a str, &'a str> {
-        caps.iter()
-            .skip(1) // the whole regex
-            .enumerate()
-            .map_while(|(i, m)| Some((self.group_names[i].as_str(), m?.as_str()))) // skip empty matches
-            .collect()
+        std::iter::zip(
+            self.group_names.iter(),
+            caps.iter().skip(1), // skip the whole regex
+        )
+        .map_while(|(k, v)| Some((k.as_str(), v?.as_str()))) // skip empty matches
+        .collect()
     }
 
     #[allow(clippy::wrong_self_convention)]
