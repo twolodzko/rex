@@ -3,9 +3,10 @@ mod serializers;
 mod utils;
 
 use clap::Parser;
-use io::{lines, new_reader, new_writer};
+use io::{new_reader, new_writer};
 use regex::Regex;
 use serializers::{ColumnsSerializer, JsonSerializer, Serializer};
+use std::io::BufRead;
 use utils::unescape;
 
 /// Command-line arguments
@@ -58,10 +59,21 @@ fn main() {
         ))
     };
 
-    for (idx, line) in lines(reader) {
-        if let Some(ref caps) = regex.captures(&line) {
-            let matched = serializer.to_string(caps, idx);
-            unwrap!(writeln!(writer, "{}", matched));
-        }
-    }
+    reader
+        .lines()
+        .map_while(|line| match line {
+            Ok(line) => Some(line),
+            Err(err) => {
+                // print errors to stderr as warnings and carry on
+                eprintln!("{}", err);
+                None
+            }
+        })
+        .enumerate()
+        .for_each(|(idx, line)| {
+            if let Some(ref caps) = regex.captures(&line) {
+                let matched = serializer.to_string(caps, idx + 1);
+                unwrap!(writeln!(writer, "{}", matched));
+            }
+        });
 }
