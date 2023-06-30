@@ -70,8 +70,8 @@ fn main() {
             }
         })
         .enumerate()
-        .for_each(|(idx, line)| {
-            if let Some(ref caps) = regex.captures(&line) {
+        .for_each(|(idx, ref line)| {
+            if let Some(ref caps) = regex.captures(line) {
                 let matched = serializer.to_string(caps, idx + 1);
                 unwrap!(writeln!(writer, "{}", matched));
             }
