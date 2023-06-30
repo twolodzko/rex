@@ -17,3 +17,16 @@ pub fn new_writer(file: &Option<String>) -> Result<Box<dyn Write>, io::Error> {
         None => Box::new(io::stdout()),
     })
 }
+
+/// Skip lines on read errors and print the errors to stderr
+#[inline]
+pub fn skip_on_error(line: Result<String, std::io::Error>) -> Option<String> {
+    match line {
+        Ok(line) => Some(line),
+        Err(err) => {
+            // print errors to stderr as warnings and carry on
+            eprintln!("{}", err);
+            None
+        }
+    }
+}
