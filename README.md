@@ -26,26 +26,26 @@ $ ls -la | rex '(?P<permissions>[rwx-]+) .*(?P<name>Cargo)\.(?P<extension>[^ ]*)
 Moreover, as the benchmark using the [IMDB dataset] shows, the code is faster than `sed` and `gawk`.
 
 ```shell
-$ hyperfine --warmup 3 \
+$ hyperfine --warmup 3 \                                                     
     "sed -E 's/(199[0-9]|20[0-9]{2})?.*,(positive|negative)/\1\t\2/' IMDB\ Dataset.csv > /dev/null" \
     "gawk 'match(\$0, /(199[0-9]|20[0-9]{2})?.*,(positive|negative)/, arr) { print arr[1], '\t' arr[2] }' IMDB\ Dataset.csv > /dev/null" \
     "rex '(199[0-9]|20[0-9]{2})?.*,(positive|negative)' IMDB\ Dataset.csv > /dev/null"
 Benchmark 1: sed -E 's/(199[0-9]|20[0-9]{2})?.*,(positive|negative)/\1\t\2/' IMDB\ Dataset.csv > /dev/null
-  Time (mean ± σ):      6.966 s ±  0.482 s    [User: 6.909 s, System: 0.056 s]
-  Range (min … max):    6.493 s …  8.052 s    10 runs
+  Time (mean ± σ):      6.455 s ±  0.257 s    [User: 6.397 s, System: 0.057 s]
+  Range (min … max):    6.178 s …  6.962 s    10 runs
  
 Benchmark 2: gawk 'match($0, /(199[0-9]|20[0-9]{2})?.*,(positive|negative)/, arr) { print arr[1], '\t' arr[2] }' IMDB\ Dataset.csv > /dev/null
-  Time (mean ± σ):      8.649 s ±  1.047 s    [User: 8.611 s, System: 0.037 s]
-  Range (min … max):    7.554 s … 10.331 s    10 runs
+  Time (mean ± σ):      7.376 s ±  0.114 s    [User: 7.351 s, System: 0.025 s]
+  Range (min … max):    7.246 s …  7.610 s    10 runs
  
 Benchmark 3: rex '(199[0-9]|20[0-9]{2})?.*,(positive|negative)' IMDB\ Dataset.csv > /dev/null
-  Time (mean ± σ):      2.030 s ±  0.318 s    [User: 1.964 s, System: 0.066 s]
-  Range (min … max):    1.756 s …  2.660 s    10 runs
+  Time (mean ± σ):      1.651 s ±  0.034 s    [User: 1.598 s, System: 0.053 s]
+  Range (min … max):    1.624 s …  1.736 s    10 runs
  
 Summary
   rex '(199[0-9]|20[0-9]{2})?.*,(positive|negative)' IMDB\ Dataset.csv > /dev/null ran
-    3.43 ± 0.59 times faster than sed -E 's/(199[0-9]|20[0-9]{2})?.*,(positive|negative)/\1\t\2/' IMDB\ Dataset.csv > /dev/null
-    4.26 ± 0.84 times faster than gawk 'match($0, /(199[0-9]|20[0-9]{2})?.*,(positive|negative)/, arr) { print arr[1], '\t' arr[2] }' IMDB\ Dataset.csv > /dev/null
+    3.91 ± 0.17 times faster than sed -E 's/(199[0-9]|20[0-9]{2})?.*,(positive|negative)/\1\t\2/' IMDB\ Dataset.csv > /dev/null
+    4.47 ± 0.11 times faster than gawk 'match($0, /(199[0-9]|20[0-9]{2})?.*,(positive|negative)/, arr) { print arr[1], '\t' arr[2] }' IMDB\ Dataset.csv > /dev/null
 ```
 
 
