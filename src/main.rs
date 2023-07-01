@@ -28,9 +28,13 @@ struct Args {
     #[arg(short, long, default_value = None, name = "FILE")]
     output: Option<String>,
 
-    /// Separator for the columns when using columnar format
+    /// Separator for the columns when using columnar format (it recognizes whitespace characters: \t, \n, \r)
     #[arg(short, long, default_value = "\t", name = "STRING")]
     separator: String,
+
+    /// Print additional information to stderr
+    #[arg(short, long, default_value_t = false)]
+    verbose: bool,
 
     /// Input data file, if not given, the input is read from stdin
     file: Option<String>,
@@ -61,12 +65,15 @@ fn main() {
 
     reader
         .lines()
-        .map_while(ok_or_warn)
         .enumerate()
+        .map_while(ok_or_warn)
         .for_each(|(idx, ref line)| {
+            let idx = idx + 1;
             if let Some(ref caps) = regex.captures(line) {
-                let matched = serializer.to_string(caps, idx + 1);
+                let matched = serializer.to_string(caps, idx);
                 unwrap!(writeln!(writer, "{}", matched));
+            } else if args.verbose {
+                warning!(idx, "no match");
             }
         });
 }

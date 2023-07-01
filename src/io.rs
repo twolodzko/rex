@@ -18,14 +18,22 @@ pub fn new_writer(file: &Option<String>) -> Result<Box<dyn Write>, io::Error> {
     })
 }
 
+/// Print warning to stderr
+#[macro_export]
+macro_rules! warning {
+    ( $idx:expr, $msg:expr ) => {
+        eprintln!("line {}: {}", $idx, $msg);
+    };
+}
+
 /// Convert from `Result<String, Error>` to `Option<String>` and print the `Error` to stderr
 #[inline]
-pub fn ok_or_warn(line: Result<String, std::io::Error>) -> Option<String> {
+pub fn ok_or_warn(line: (usize, Result<String, io::Error>)) -> Option<(usize, String)> {
     match line {
-        Ok(line) => Some(line),
-        Err(err) => {
+        (idx, Ok(line)) => Some((idx, line)),
+        (idx, Err(err)) => {
             // print errors to stderr as warnings and carry on
-            eprintln!("{}", err);
+            warning!(idx, err);
             None
         }
     }

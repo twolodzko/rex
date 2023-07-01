@@ -26,7 +26,7 @@ $ ls -la | rex '(?P<permissions>[rwx-]+) .*(?P<name>Cargo)\.(?P<extension>[^ ]*)
 Moreover, as the benchmark using the [IMDB dataset] shows, the code is faster than `sed` and `gawk`.
 
 ```shell
-$ hyperfine --warmup 3 \                                                     
+$ hyperfine --warmup 3 \
     "sed -E 's/(199[0-9]|20[0-9]{2})?.*,(positive|negative)/\1\t\2/' IMDB\ Dataset.csv > /dev/null" \
     "gawk 'match(\$0, /(199[0-9]|20[0-9]{2})?.*,(positive|negative)/, arr) { print arr[1], '\t' arr[2] }' IMDB\ Dataset.csv > /dev/null" \
     "rex '(199[0-9]|20[0-9]{2})?.*,(positive|negative)' IMDB\ Dataset.csv > /dev/null"
