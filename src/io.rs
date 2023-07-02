@@ -28,7 +28,7 @@ macro_rules! warning {
 
 /// Convert from `Result<String, Error>` to `Option<String>` and print the `Error` to stderr
 #[inline]
-pub fn ok_or_warn(line: (usize, Result<String, io::Error>)) -> Option<(usize, String)> {
+pub fn ok_or_warning(line: (usize, Result<String, io::Error>)) -> Option<(usize, String)> {
     match line {
         (idx, Ok(line)) => Some((idx, line)),
         (idx, Err(err)) => {

@@ -3,7 +3,7 @@ mod serializers;
 mod utils;
 
 use clap::Parser;
-use io::{new_reader, new_writer, ok_or_warn};
+use io::{new_reader, new_writer, ok_or_warning};
 use regex::Regex;
 use serializers::{ColumnsSerializer, JsonSerializer, Serializer};
 use std::io::BufRead;
@@ -49,6 +49,7 @@ fn main() {
     let reader = unwrap!(new_reader(&args.file));
     let mut writer = unwrap!(new_writer(&args.output));
 
+    // Pick and initialize a serializer
     let serializer: Box<dyn Serializer> = if args.json {
         // if the name "line" is already used for a name of a capturing group, don't use it
         let line_numbers =
@@ -63,12 +64,14 @@ fn main() {
         ))
     };
 
+    // Do the work
     reader
         .lines()
         .enumerate()
-        .map_while(ok_or_warn)
+        .map_while(ok_or_warning) // skip lines on read errors
         .for_each(|(idx, ref line)| {
             let idx = idx + 1;
+            // process the line
             if let Some(ref caps) = regex.captures(line) {
                 let matched = serializer.to_string(caps, idx);
                 unwrap!(writeln!(writer, "{}", matched));
