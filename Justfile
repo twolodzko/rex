@@ -1,4 +1,6 @@
-test: lint
+test: lint unit-test integration-test
+
+unit-test:
     cargo test
 
 lint:
@@ -10,3 +12,6 @@ release:
 
 install:
     cargo install --path .
+
+integration-test: release
+    bats test.bats
