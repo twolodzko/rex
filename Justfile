@@ -6,12 +6,12 @@ unit-test:
 lint:
     cargo clippy
 
-release:
+build-release:
     cargo build -r
     cp ./target/release/rex .
 
 install:
     cargo install --path .
 
-integration-test: release
+integration-test: build-release
     bats test.bats

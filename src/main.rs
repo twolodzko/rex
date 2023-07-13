@@ -73,7 +73,7 @@ fn main() {
             let idx = idx + 1;
             // process the line
             if let Some(ref caps) = regex.captures(line) {
-                let matched = serializer.to_string(caps, idx);
+                let matched = serializer.serialize(caps, idx);
                 unwrap!(writeln!(writer, "{}", matched));
             } else if args.verbose {
                 warning!(idx, "no match");

@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 pub trait Serializer {
     /// Serialize `Regex::Captures` as a string
-    fn to_string(&self, caps: &Captures, idx: usize) -> String;
+    fn serialize(&self, caps: &Captures, idx: usize) -> String;
 }
 
 /// Serialize `Regex::Captures` as columns separated by `separator`
@@ -48,7 +48,7 @@ impl ColumnsSerializer {
 
 impl Serializer for ColumnsSerializer {
     #[inline]
-    fn to_string(&self, caps: &Captures, idx: usize) -> String {
+    fn serialize(&self, caps: &Captures, idx: usize) -> String {
         let columns = if self.has_groups {
             self.from_groups(caps)
         } else {
@@ -106,7 +106,7 @@ impl JsonSerializer {
 
 impl Serializer for JsonSerializer {
     #[inline]
-    fn to_string(&self, caps: &Captures, idx: usize) -> String {
+    fn serialize(&self, caps: &Captures, idx: usize) -> String {
         let mut fields = if self.has_groups {
             self.from_groups(caps)
         } else {
@@ -206,7 +206,7 @@ mod tests {
         let regex = Regex::new(regex).unwrap();
         let serializer = JsonSerializer::new(&regex, line_numbers);
         let captures = regex.captures(example).unwrap();
-        assert_eq!(serializer.to_string(&captures, 42), expected);
+        assert_eq!(serializer.serialize(&captures, 42), expected);
     }
 
     #[test_case(
@@ -267,6 +267,6 @@ mod tests {
         let regex = Regex::new(regex).unwrap();
         let serializer = ColumnsSerializer::new(&regex, line_numbers, separator.to_string());
         let captures = regex.captures(example).unwrap();
-        assert_eq!(serializer.to_string(&captures, 42), expected);
+        assert_eq!(serializer.serialize(&captures, 42), expected);
     }
 }
