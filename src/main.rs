@@ -20,7 +20,7 @@ struct Args {
     #[arg(short, long, default_value_t = false)]
     line_numbers: bool,
 
-    /// Use JSON format instead of columns
+    /// Use JSON output format instead of columns
     #[arg(short, long, default_value_t = false)]
     json: bool,
 
