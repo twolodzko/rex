@@ -68,7 +68,7 @@ fn main() {
     reader
         .lines()
         .enumerate()
-        .map_while(ok_or_warning) // skip lines on read errors
+        .filter_map(ok_or_warning) // skip lines on read errors
         .for_each(|(idx, ref line)| {
             let idx = idx + 1;
             // process the line
