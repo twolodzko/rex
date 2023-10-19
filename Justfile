@@ -7,7 +7,7 @@ lint:
     cargo clippy
 
 build-release:
-    cargo build -r
+    cargo build --release
     cp ./target/release/rex .
 
 install:

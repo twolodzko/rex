@@ -17,7 +17,6 @@ pub struct ColumnsSerializer {
 impl ColumnsSerializer {
     pub fn new(regex: &Regex, line_numbers: bool, separator: String) -> Self {
         let has_groups = regex.captures_len() > 1;
-
         ColumnsSerializer {
             has_groups,
             line_numbers,
@@ -42,6 +41,7 @@ impl ColumnsSerializer {
     #[allow(clippy::wrong_self_convention)]
     #[inline]
     fn from_whole(&self, caps: &Captures) -> String {
+        // alternatively, with `filter_map` only the matched columns would be printed
         caps.get(0).map_or("", |m| m.as_str()).to_string()
     }
 }
@@ -90,7 +90,7 @@ impl JsonSerializer {
             self.group_names.iter(),
             caps.iter().skip(1), // skip the whole regex
         )
-        .map_while(|(k, v)| Some((k.as_str(), v?.as_str()))) // skip empty matches
+        .filter_map(|(k, v)| Some((k.as_str(), v?.as_str()))) // skip empty matches
         .collect()
     }
 
@@ -202,6 +202,10 @@ mod tests {
         true, r"(?<A>[0-9]{3})-(?<B>[0-9]{2})-(?<C>[0-9]{3})", r"prefix 111-22-333 suffix abc 123", r#"{"A":"111","B":"22","C":"333","line":"42"}"#;
         "many named groups with line number"
     )]
+    #[test_case(
+        false, r"([a-z]+)?([0-9]+).*", r"123 xyz", r#"{"2":"123"}"#;
+        "optional match"
+    )]
     fn json_serializer(line_numbers: bool, regex: &str, example: &str, expected: &str) {
         let regex = Regex::new(regex).unwrap();
         let serializer = JsonSerializer::new(&regex, line_numbers);
@@ -256,6 +260,10 @@ mod tests {
     #[test_case(
         true, "\t", r"(?<A>[0-9]{3})-(?<B>[0-9]{2})-(?<C>[0-9]{3})", r"prefix 111-22-333 suffix abc 123", "42\t111\t22\t333";
         "many named groups with line number"
+    )]
+    #[test_case(
+        false, "\t", r"([a-z]+)?([0-9]+).*", r"123 xyz", "\t123";
+        "optional match"
     )]
     fn columns_serializer(
         line_numbers: bool,
