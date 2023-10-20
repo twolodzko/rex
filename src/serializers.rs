@@ -24,9 +24,8 @@ impl ColumnsSerializer {
         }
     }
 
-    #[allow(clippy::wrong_self_convention)]
     #[inline]
-    fn from_groups(&self, caps: &Captures) -> String {
+    fn using_groups(&self, caps: &Captures) -> String {
         let fields: Vec<&str> = caps
             .iter()
             .skip(1) // the whole regex
@@ -38,9 +37,8 @@ impl ColumnsSerializer {
         fields.join(&self.separator)
     }
 
-    #[allow(clippy::wrong_self_convention)]
     #[inline]
-    fn from_whole(&self, caps: &Captures) -> String {
+    fn using_whole_match(&self, caps: &Captures) -> String {
         // alternatively, with `filter_map` only the matched columns would be printed
         caps.get(0).map_or("", |m| m.as_str()).to_string()
     }
@@ -50,9 +48,9 @@ impl Serializer for ColumnsSerializer {
     #[inline]
     fn serialize(&self, caps: &Captures, idx: usize) -> String {
         let columns = if self.has_groups {
-            self.from_groups(caps)
+            self.using_groups(caps)
         } else {
-            self.from_whole(caps)
+            self.using_whole_match(caps)
         };
 
         if self.line_numbers {
@@ -75,6 +73,7 @@ impl JsonSerializer {
     pub fn new(regex: &Regex, line_numbers: bool) -> Self {
         let group_names = capture_groups_names(regex);
         let has_groups = !group_names.is_empty();
+        debug_assert_eq!(has_groups, regex.captures_len() > 1);
 
         JsonSerializer {
             has_groups,
@@ -83,9 +82,8 @@ impl JsonSerializer {
         }
     }
 
-    #[allow(clippy::wrong_self_convention)]
     #[inline]
-    fn from_groups<'a>(&'a self, caps: &Captures<'a>) -> HashMap<&'a str, &'a str> {
+    fn using_groups<'a>(&'a self, caps: &Captures<'a>) -> HashMap<&'a str, &'a str> {
         std::iter::zip(
             self.group_names.iter(),
             caps.iter().skip(1), // skip the whole regex
@@ -94,13 +92,10 @@ impl JsonSerializer {
         .collect()
     }
 
-    #[allow(clippy::wrong_self_convention)]
     #[inline]
-    fn from_whole<'a>(&self, caps: &Captures<'a>) -> HashMap<&'a str, &'a str> {
+    fn using_whole_match<'a>(&self, caps: &Captures<'a>) -> HashMap<&'a str, &'a str> {
         let matched = caps.get(0).map_or("", |m| m.as_str());
-        let mut fields = HashMap::new();
-        fields.insert("match", matched);
-        fields
+        HashMap::from([("match", matched)])
     }
 }
 
@@ -108,9 +103,9 @@ impl Serializer for JsonSerializer {
     #[inline]
     fn serialize(&self, caps: &Captures, idx: usize) -> String {
         let mut fields = if self.has_groups {
-            self.from_groups(caps)
+            self.using_groups(caps)
         } else {
-            self.from_whole(caps)
+            self.using_whole_match(caps)
         };
 
         let idx_str;
